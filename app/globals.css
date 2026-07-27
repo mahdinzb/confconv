@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
 :root { --ink:#14231d; --paper:#f3f0e8; --line:#d9d4c7; --green:#155b42; }
+@font-face {
+  font-family:"Conflux Persian";
+  src:local("IRANSans"),local("IRANSansWeb"),local("IRANSansX");
+  unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF;
+}
+@font-face {
+  font-family:"Conflux Latin";
+  src:local("Calibri");
+  unicode-range:U+0000-05FF;
+}
 * { box-sizing:border-box; }
-body { margin:0; background:var(--paper); color:var(--ink); font-family:Tahoma, Arial, sans-serif; }
+body { margin:0; background:var(--paper); color:var(--ink); font-family:"Conflux Persian","Conflux Latin",IRANSans,Calibri,Tahoma,Arial,sans-serif; }
 button, textarea { font:inherit; }
 button { cursor:pointer; }
 ::selection { background:#f5d98e; }
