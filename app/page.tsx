@@ -231,7 +231,7 @@ export default function Home() {
           <div className="panel-head">
             <div><span>02</span><h2>Confluence output</h2></div>
             <button className={`copy ${copied ? "done" : ""}`} onClick={copyOutput}>
-              {copied ? "Copied ✓" : mode === "wiki" ? "Copy Confluence Wiki" : "Copy Markdown"}
+              {copied ? "Copied ✓" : "Copy"}
             </button>
           </div>
           {mode === "wiki" && <textarea className="storage wiki-output" readOnly value={wiki} dir="auto" aria-label="Confluence Wiki Markup output" />}
