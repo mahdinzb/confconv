@@ -229,6 +229,11 @@ export default function Home() {
     <main>
       <header className="topbar">
         <div className="brand"><span className="mark">CC</span><div><strong>ConfConv</strong><small>Content formatted for Confluence</small></div></div>
+        <div className="format-guide" aria-label="Output format information">
+          <div><span /><b>Smart View</b><small>Correct RTL/LTR rendering for AI-generated content</small></div>
+          <div><span /><b>Confluence Wiki</b><small>Confluence-ready code blocks, tables and headings</small></div>
+          <div><span /><b>Markdown</b><small>Standard portable format for compatible editors</small></div>
+        </div>
       </header>
       <section className="toolbar">
         <div className="metrics">
@@ -262,6 +267,15 @@ export default function Home() {
           </div>
         </article>
       </section>
+      <footer className="site-footer">
+        <span>Built by Mahdi Nazarbeigi</span>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/mahdinzb/confconv" target="_blank" rel="noreferrer">GitHub</a>
+        <span aria-hidden="true">·</span>
+        <span>Open source under MIT</span>
+        <span aria-hidden="true">·</span>
+        <span>© 2026</span>
+      </footer>
     </main>
   );
 }
