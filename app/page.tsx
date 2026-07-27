@@ -125,7 +125,10 @@ function renderHtml(blocks: Block[]) {
     if (b.type === "heading") return `<h${b.level} dir="${direction(b.text)}">${inline(b.text)}</h${b.level}>`;
     if (b.type === "paragraph") return `<p dir="${direction(b.text)}">${inline(b.text)}</p>`;
     if (b.type === "quote") return `<blockquote dir="${direction(b.text)}">${inline(b.text).replace(/\n/g, "<br />")}</blockquote>`;
-    if (b.type === "code") return `<pre data-language="${b.language}" dir="ltr"><code>${escapeHtml(b.text)}</code></pre>`;
+    if (b.type === "code") {
+      const language = escapeHtml(b.language);
+      return `<pre class="code-block language-${language}" data-language="${language}" dir="ltr"><code class="language-${language}">${escapeHtml(b.text)}</code></pre>`;
+    }
     if (b.type === "list") {
       const tag = b.ordered ? "ol" : "ul";
       return `<${tag} dir="${direction(b.items.join(" "))}">${b.items.map((x) => `<li>${inline(x)}</li>`).join("")}</${tag}>`;
@@ -166,6 +169,10 @@ export default function Home() {
   const [connection, setConnection] = useState({ siteUrl: "", email: "", apiToken: "", spaceId: "", parentId: "", title: "" });
   const blocks = useMemo(() => parse(text), [text]);
   const html = useMemo(() => renderHtml(blocks), [blocks]);
+  const clipboardHtml = useMemo(() =>
+    `<!doctype html><html><head><meta charset="utf-8"></head><body><!--StartFragment--><div class="markdown-body" dir="auto">${html}</div><!--EndFragment--></body></html>`,
+    [html]
+  );
   const storage = useMemo(() => storageMarkup(blocks), [blocks]);
   const codeCount = blocks.filter((x) => x.type === "code").length;
   const tableCount = blocks.filter((x) => x.type === "table").length;
@@ -174,9 +181,13 @@ export default function Home() {
     if (kind === "markdown") await navigator.clipboard.writeText(text);
     else if (kind === "storage") await navigator.clipboard.writeText(storage);
     else {
-      const blob = new Blob([html], { type: "text/html" });
+      const blob = new Blob([clipboardHtml], { type: "text/html" });
       const plain = new Blob([text], { type: "text/plain" });
-      await navigator.clipboard.write([new ClipboardItem({ "text/html": blob, "text/plain": plain })]);
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+        await navigator.clipboard.write([new ClipboardItem({ "text/html": blob, "text/plain": plain })]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
     }
     setCopied(kind); setTimeout(() => setCopied(""), 1600);
   }
@@ -218,7 +229,7 @@ export default function Home() {
         </div>
         <div className="segmented" aria-label="نوع خروجی">
           <button className={mode === "preview" ? "active" : ""} onClick={() => setMode("preview")}>پیش‌نمایش</button>
-          <button className={mode === "markdown" ? "active" : ""} onClick={() => setMode("markdown")}>Markdown</button>
+          <button className={mode === "markdown" ? "active" : ""} onClick={() => setMode("markdown")}>Markdown برای Import</button>
           <button className={mode === "storage" ? "active" : ""} onClick={() => setMode("storage")}>Storage format</button>
         </div>
       </section>
@@ -232,15 +243,15 @@ export default function Home() {
           <div className="panel-head">
             <div><span>02</span><h2>خروجی کانفلوئنس</h2></div>
             <button className={`copy ${copied ? "done" : ""}`} onClick={() => copyAs(mode === "preview" ? "rich" : mode)}>
-              {copied ? "کپی شد ✓" : mode === "preview" ? "کپی Rich Text" : mode === "markdown" ? "کپی Markdown" : "کپی Storage"}
+              {copied ? "کپی شد ✓" : mode === "preview" ? "کپی مثل ChatGPT" : mode === "markdown" ? "کپی برای Import" : "کپی Storage"}
             </button>
           </div>
           {mode === "preview" && <div className="preview confluence" dangerouslySetInnerHTML={{ __html: html }} />}
           {mode === "markdown" && <textarea className="storage" readOnly value={text} dir="auto" aria-label="Markdown output" />}
           {mode === "storage" && <textarea className="storage" readOnly value={storage} dir="ltr" aria-label="Confluence storage format" />}
           <div className="panel-foot">
-            <span>{mode === "preview" ? "کپی سریع؛ ممکن است Code block به متن ساده تبدیل شود" : mode === "markdown" ? "مناسب Legacy Editor و ابزارهای Import" : "فقط برای API؛ داخل Editor پیست نکنید"}</span>
-            <span className={mode === "preview" ? "caution" : "ready"}>{mode === "preview" ? "محدودیت Clipboard" : "خروجی تخصصی"}</span>
+            <span>{mode === "preview" ? "همین گزینه را برای Paste معمولی استفاده کنید" : mode === "markdown" ? "برای Paste عادی نیست؛ مخصوص Legacy Editor و Import" : "فقط برای API؛ داخل Editor پیست نکنید"}</span>
+            <span className={mode === "preview" ? "ready" : "caution"}>{mode === "preview" ? "Rich HTML" : "Paste مستقیم نکنید"}</span>
           </div>
         </article>
       </section>
