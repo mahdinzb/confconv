@@ -45,6 +45,8 @@ h1 { margin:0; font-size:clamp(36px,4.3vw,68px); line-height:1.15; letter-spacin
 .confluence table { width:100%; border-collapse:collapse; margin:20px 0; font-size:12px; }
 .confluence th { background:#e9eee9; font-weight:700; }.confluence th,.confluence td { border:1px solid #d5dcd6; padding:10px 12px; text-align:start; }
 .storage { direction:ltr; text-align:left; white-space:pre-wrap; color:#23483a; }
+.wiki-output { background:#f8faf7; color:#153f2f; }
+.recommended-tab { color:#155b42 !important; font-weight:800; }
 footer { text-align:center; color:#78817c; font-size:11px; padding:22px 0 0; } footer span { color:#9b7f3e; margin-left:7px; font-weight:bold; }
 .native-cta { margin-top:18px; border:1px solid #bfd0c5; background:#e7efe8; border-radius:16px; padding:24px 28px; display:flex; align-items:center; justify-content:space-between; gap:30px; }
 .native-cta h2 { margin:5px 0 8px; font-size:21px; }.native-cta p { margin:0; color:#657068; font-size:12px; }.native-kicker { color:var(--green); font-size:9px; letter-spacing:1px; font-weight:800; }

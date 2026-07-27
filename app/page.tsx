@@ -159,10 +159,43 @@ function storageMarkup(blocks: Block[]) {
   }).join("");
 }
 
+function wikiInline(value: string) {
+  return value
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, "[$1|$2]")
+    .replace(/`([^`]+)`/g, "{{$1}}")
+    .replace(/\*\*([^*]+)\*\*/g, "*$1*")
+    .replace(/__([^_]+)__/g, "*$1*")
+    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "_$1_");
+}
+
+function wikiMarkup(blocks: Block[]) {
+  return blocks.map((block) => {
+    if (block.type === "rule") return "----";
+    if (block.type === "heading") return `h${block.level}. ${wikiInline(block.text)}`;
+    if (block.type === "paragraph") return wikiInline(block.text);
+    if (block.type === "quote") return `{quote}\n${wikiInline(block.text)}\n{quote}`;
+    if (block.type === "code") {
+      const supported: Record<string, string> = {
+        javascript: "javascript", typescript: "javascript", js: "javascript", ts: "javascript",
+        python: "python", py: "python", java: "java", sql: "sql", bash: "bash", shell: "bash",
+        css: "css", html: "html/xml", xml: "html/xml", json: "javascript",
+      };
+      const language = supported[block.language.toLowerCase()] || "none";
+      return `{code:language=${language}}\n${block.text}\n{code}`;
+    }
+    if (block.type === "list") {
+      const marker = block.ordered ? "#" : "*";
+      return block.items.map((item) => `${marker} ${wikiInline(item)}`).join("\n");
+    }
+    const [head, ...rows] = block.rows;
+    return [`||${head.map(wikiInline).join("||")}||`, ...rows.map((row) => `|${row.map(wikiInline).join("|")}|`)].join("\n");
+  }).join("\n\n");
+}
+
 export default function Home() {
   const [text, setText] = useState(sample);
-  const [mode, setMode] = useState<"preview" | "markdown" | "storage">("preview");
-  const [copied, setCopied] = useState<"" | "rich" | "markdown" | "storage">("");
+  const [mode, setMode] = useState<"preview" | "wiki" | "markdown" | "storage">("wiki");
+  const [copied, setCopied] = useState<"" | "rich" | "wiki" | "markdown" | "storage">("");
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<{ ok: boolean; message: string; url?: string } | null>(null);
@@ -174,11 +207,13 @@ export default function Home() {
     [html]
   );
   const storage = useMemo(() => storageMarkup(blocks), [blocks]);
+  const wiki = useMemo(() => wikiMarkup(blocks), [blocks]);
   const codeCount = blocks.filter((x) => x.type === "code").length;
   const tableCount = blocks.filter((x) => x.type === "table").length;
 
-  async function copyAs(kind: "rich" | "markdown" | "storage") {
+  async function copyAs(kind: "rich" | "wiki" | "markdown" | "storage") {
     if (kind === "markdown") await navigator.clipboard.writeText(text);
+    else if (kind === "wiki") await navigator.clipboard.writeText(wiki);
     else if (kind === "storage") await navigator.clipboard.writeText(storage);
     else {
       const blob = new Blob([clipboardHtml], { type: "text/html" });
@@ -229,6 +264,7 @@ export default function Home() {
         </div>
         <div className="segmented" aria-label="نوع خروجی">
           <button className={mode === "preview" ? "active" : ""} onClick={() => setMode("preview")}>پیش‌نمایش</button>
+          <button className={mode === "wiki" ? "active recommended-tab" : ""} onClick={() => setMode("wiki")}>Confluence Wiki ✓</button>
           <button className={mode === "markdown" ? "active" : ""} onClick={() => setMode("markdown")}>Markdown برای Import</button>
           <button className={mode === "storage" ? "active" : ""} onClick={() => setMode("storage")}>Storage format</button>
         </div>
@@ -243,15 +279,16 @@ export default function Home() {
           <div className="panel-head">
             <div><span>02</span><h2>خروجی کانفلوئنس</h2></div>
             <button className={`copy ${copied ? "done" : ""}`} onClick={() => copyAs(mode === "preview" ? "rich" : mode)}>
-              {copied ? "کپی شد ✓" : mode === "preview" ? "کپی مثل ChatGPT" : mode === "markdown" ? "کپی برای Import" : "کپی Storage"}
+              {copied ? "کپی شد ✓" : mode === "preview" ? "کپی مثل ChatGPT" : mode === "wiki" ? "کپی Confluence Wiki" : mode === "markdown" ? "کپی برای Import" : "کپی Storage"}
             </button>
           </div>
           {mode === "preview" && <div className="preview confluence" dangerouslySetInnerHTML={{ __html: html }} />}
+          {mode === "wiki" && <textarea className="storage wiki-output" readOnly value={wiki} dir="auto" aria-label="Confluence Wiki Markup output" />}
           {mode === "markdown" && <textarea className="storage" readOnly value={text} dir="auto" aria-label="Markdown output" />}
           {mode === "storage" && <textarea className="storage" readOnly value={storage} dir="ltr" aria-label="Confluence storage format" />}
           <div className="panel-foot">
-            <span>{mode === "preview" ? "همین گزینه را برای Paste معمولی استفاده کنید" : mode === "markdown" ? "برای Paste عادی نیست؛ مخصوص Legacy Editor و Import" : "فقط برای API؛ داخل Editor پیست نکنید"}</span>
-            <span className={mode === "preview" ? "ready" : "caution"}>{mode === "preview" ? "Rich HTML" : "Paste مستقیم نکنید"}</span>
+            <span>{mode === "wiki" ? "مسیر استفاده: Insert → Markup → Confluence Wiki" : mode === "preview" ? "برای Paste معمولی؛ تبدیل Code block تضمین‌شده نیست" : mode === "markdown" ? "برای Paste عادی نیست؛ مخصوص Markdown Import" : "فقط برای API؛ داخل Editor پیست نکنید"}</span>
+            <span className={mode === "wiki" ? "ready" : "caution"}>{mode === "wiki" ? "پیشنهاد برای شرکت شما" : "محدودیت تبدیل"}</span>
           </div>
         </article>
       </section>
