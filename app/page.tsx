@@ -236,7 +236,7 @@ export default function Home() {
         </div>
         <div className="segmented" aria-label="Output format">
           <button className={mode === "preview" ? "active" : ""} onClick={() => setMode("preview")}>Preview</button>
-          <button className={mode === "wiki" ? "active recommended-tab" : ""} onClick={() => setMode("wiki")}>Confluence Wiki ✓</button>
+          <button className={mode === "wiki" ? "active recommended-tab" : ""} onClick={() => setMode("wiki")}>Confluence Wiki</button>
           <button className={mode === "markdown" ? "active" : ""} onClick={() => setMode("markdown")}>Markdown</button>
         </div>
       </section>
