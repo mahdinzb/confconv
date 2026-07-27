@@ -33,7 +33,7 @@ h1 { margin:0; font-size:clamp(36px,4.3vw,68px); line-height:1.15; letter-spacin
 .panel-foot { min-height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 22px; border-top:1px solid #e4e0d7; color:#858d88; font-size:10px; direction:ltr; }
 .ready { color:#22704f; }.ready:before { content:"●"; margin-left:6px; font-size:7px; }
 .caution { color:#9a6b12; }.caution:before { content:"●"; margin-left:6px; font-size:7px; }
-.confluence { color:#17231e; font:14px/1.9 Tahoma,Arial,sans-serif; }
+.confluence { color:#17231e; font-family:"ConfConv Persian","ConfConv Latin",IRANSans,Calibri,Tahoma,Arial,sans-serif; font-size:14px; line-height:1.9; }
 .confluence h1,.confluence h2,.confluence h3,.confluence h4 { letter-spacing:0; line-height:1.4; margin:8px 0 18px; }
 .confluence h1 { font-size:27px; }.confluence h2 { font-size:21px; border-bottom:1px solid #e3e0d8; padding-bottom:9px; margin-top:28px; }.confluence h3 { font-size:17px; }
 .confluence p { margin:0 0 17px; }.confluence ul,.confluence ol { padding-inline-start:25px; margin:0 0 20px; }

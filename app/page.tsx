@@ -235,7 +235,7 @@ export default function Home() {
           <span><b>{blocks.length}</b> blocks</span><span><b>{codeCount}</b> code blocks</span><span><b>{tableCount}</b> tables</span>
         </div>
         <div className="segmented" aria-label="Output format">
-          <button className={mode === "preview" ? "active" : ""} onClick={() => setMode("preview")}>Preview</button>
+          <button className={mode === "preview" ? "active" : ""} onClick={() => setMode("preview")}>Smart View</button>
           <button className={mode === "wiki" ? "active recommended-tab" : ""} onClick={() => setMode("wiki")}>Confluence Wiki</button>
           <button className={mode === "markdown" ? "active" : ""} onClick={() => setMode("markdown")}>Markdown</button>
         </div>
@@ -257,8 +257,8 @@ export default function Home() {
           {mode === "wiki" && <textarea className="storage wiki-output" readOnly value={wiki} dir="auto" aria-label="Confluence Wiki Markup output" />}
           {mode === "markdown" && <textarea className="storage" readOnly value={text} dir="auto" aria-label="Markdown output" />}
           <div className="panel-foot">
-            <span>{mode === "preview" ? "Rich preview — Copy preserves supported formatting" : mode === "wiki" ? "Use in Confluence: Insert → Markup → Confluence Wiki" : "Use in Confluence: Insert → Markup → Markdown"}</span>
-            <span className="ready">{mode === "preview" ? "Preview" : mode === "wiki" ? "Confluence Wiki" : "Markdown"}</span>
+            <span>{mode === "preview" ? "Smart View — Copy preserves supported formatting" : mode === "wiki" ? "Use in Confluence: Insert → Markup → Confluence Wiki" : "Use in Confluence: Insert → Markup → Markdown"}</span>
+            <span className="ready">{mode === "preview" ? "Smart View" : mode === "wiki" ? "Confluence Wiki" : "Markdown"}</span>
           </div>
         </article>
       </section>
