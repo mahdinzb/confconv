@@ -136,41 +136,81 @@ function renderHtml(blocks: Block[]) {
 }
 
 function storageMarkup(blocks: Block[]) {
-  return renderHtml(blocks).replace(
-    /<pre data-language="([^"]+)" dir="ltr"><code>([\s\S]*?)<\/code><\/pre>/g,
-    '<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">$1</ac:parameter><ac:plain-text-body><![CDATA[$2]]></ac:plain-text-body></ac:structured-macro>'
-  );
+  const cdata = (value: string) => value.replace(/]]>/g, "]]]]><![CDATA[>");
+  return blocks.map((b) => {
+    if (b.type === "rule") return "<hr />";
+    if (b.type === "heading") return `<h${b.level}>${inline(b.text)}</h${b.level}>`;
+    if (b.type === "paragraph") return `<p>${inline(b.text)}</p>`;
+    if (b.type === "quote") {
+      return `<ac:structured-macro ac:name="info"><ac:rich-text-body><p>${inline(b.text).replace(/\n/g, "<br />")}</p></ac:rich-text-body></ac:structured-macro>`;
+    }
+    if (b.type === "code") {
+      return `<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">${escapeHtml(b.language)}</ac:parameter><ac:plain-text-body><![CDATA[${cdata(b.text)}]]></ac:plain-text-body></ac:structured-macro>`;
+    }
+    if (b.type === "list") {
+      const tag = b.ordered ? "ol" : "ul";
+      return `<${tag}>${b.items.map((item) => `<li><p>${inline(item)}</p></li>`).join("")}</${tag}>`;
+    }
+    const [head, ...rows] = b.rows;
+    return `<table><tbody><tr>${head.map((cell) => `<th><p>${inline(cell)}</p></th>`).join("")}</tr>${rows.map((row) => `<tr>${row.map((cell) => `<td><p>${inline(cell)}</p></td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  }).join("");
 }
 
 export default function Home() {
   const [text, setText] = useState(sample);
-  const [mode, setMode] = useState<"preview" | "storage">("preview");
-  const [copied, setCopied] = useState(false);
+  const [mode, setMode] = useState<"preview" | "markdown" | "storage">("preview");
+  const [copied, setCopied] = useState<"" | "rich" | "markdown" | "storage">("");
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishResult, setPublishResult] = useState<{ ok: boolean; message: string; url?: string } | null>(null);
+  const [connection, setConnection] = useState({ siteUrl: "", email: "", apiToken: "", spaceId: "", parentId: "", title: "" });
   const blocks = useMemo(() => parse(text), [text]);
   const html = useMemo(() => renderHtml(blocks), [blocks]);
   const storage = useMemo(() => storageMarkup(blocks), [blocks]);
   const codeCount = blocks.filter((x) => x.type === "code").length;
   const tableCount = blocks.filter((x) => x.type === "table").length;
 
-  async function copyAll() {
-    if (mode === "storage") await navigator.clipboard.writeText(storage);
+  async function copyAs(kind: "rich" | "markdown" | "storage") {
+    if (kind === "markdown") await navigator.clipboard.writeText(text);
+    else if (kind === "storage") await navigator.clipboard.writeText(storage);
     else {
       const blob = new Blob([html], { type: "text/html" });
       const plain = new Blob([text], { type: "text/plain" });
       await navigator.clipboard.write([new ClipboardItem({ "text/html": blob, "text/plain": plain })]);
     }
-    setCopied(true); setTimeout(() => setCopied(false), 1600);
+    setCopied(kind); setTimeout(() => setCopied(""), 1600);
+  }
+
+  async function publishToConfluence(event: React.FormEvent) {
+    event.preventDefault();
+    setPublishing(true);
+    setPublishResult(null);
+    try {
+      const response = await fetch("/api/confluence/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...connection, storage }),
+      });
+      const result = await response.json() as { message?: string; url?: string };
+      if (!response.ok) throw new Error(result.message || "انتشار انجام نشد.");
+      setPublishResult({ ok: true, message: "صفحه با ساختار Native کانفلوئنس ساخته شد.", url: result.url });
+      setConnection((value) => ({ ...value, apiToken: "" }));
+    } catch (error) {
+      setPublishResult({ ok: false, message: error instanceof Error ? error.message : "خطای ناشناخته" });
+    } finally {
+      setPublishing(false);
+    }
   }
 
   return (
     <main>
       <header className="topbar">
         <div className="brand"><span className="mark">CF</span><div><strong>Conflux</strong><small>متن مرتب، آمادهٔ کانفلوئنس</small></div></div>
-        <div className="status"><span></span>پردازش کاملاً داخل مرورگر</div>
+        <button className="publish-top" onClick={() => { setPublishOpen(true); setPublishResult(null); }}>انتشار مستقیم در Confluence</button>
       </header>
       <section className="hero">
         <div><span className="eyebrow">Persian · English · Mixed</span><h1>از متن خام تا صفحه‌ای<br />که آمادهٔ انتشار است.</h1></div>
-        <p>متن، کد، جدول و ساختار را خودکار تشخیص می‌دهد؛ جهت فارسی و انگلیسی را برای هر بخش جداگانه تنظیم می‌کند.</p>
+        <p>متن، کد و جدول را تشخیص می‌دهد. برای نتیجهٔ کاملاً Native، صفحه را مستقیم در کانفلوئنس منتشر کنید؛ کپی معمولی همیشه محدودیت‌های ویرایشگر را دارد.</p>
       </section>
       <section className="toolbar">
         <div className="metrics">
@@ -178,6 +218,7 @@ export default function Home() {
         </div>
         <div className="segmented" aria-label="نوع خروجی">
           <button className={mode === "preview" ? "active" : ""} onClick={() => setMode("preview")}>پیش‌نمایش</button>
+          <button className={mode === "markdown" ? "active" : ""} onClick={() => setMode("markdown")}>Markdown</button>
           <button className={mode === "storage" ? "active" : ""} onClick={() => setMode("storage")}>Storage format</button>
         </div>
       </section>
@@ -188,12 +229,49 @@ export default function Home() {
           <div className="panel-foot"><span>Markdown و متن ساده</span><span>{text.length.toLocaleString("fa-IR")} کاراکتر</span></div>
         </article>
         <article className="panel output-panel">
-          <div className="panel-head"><div><span>02</span><h2>خروجی کانفلوئنس</h2></div><button className={`copy ${copied ? "done" : ""}`} onClick={copyAll}>{copied ? "کپی شد ✓" : "کپی کامل"}</button></div>
-          {mode === "preview" ? <div className="preview confluence" dangerouslySetInnerHTML={{ __html: html }} /> : <textarea className="storage" readOnly value={storage} dir="ltr" aria-label="Confluence storage format" />}
-          <div className="panel-foot"><span>جهت هر بلوک: خودکار</span><span className="ready">آمادهٔ Paste</span></div>
+          <div className="panel-head">
+            <div><span>02</span><h2>خروجی کانفلوئنس</h2></div>
+            <button className={`copy ${copied ? "done" : ""}`} onClick={() => copyAs(mode === "preview" ? "rich" : mode)}>
+              {copied ? "کپی شد ✓" : mode === "preview" ? "کپی Rich Text" : mode === "markdown" ? "کپی Markdown" : "کپی Storage"}
+            </button>
+          </div>
+          {mode === "preview" && <div className="preview confluence" dangerouslySetInnerHTML={{ __html: html }} />}
+          {mode === "markdown" && <textarea className="storage" readOnly value={text} dir="auto" aria-label="Markdown output" />}
+          {mode === "storage" && <textarea className="storage" readOnly value={storage} dir="ltr" aria-label="Confluence storage format" />}
+          <div className="panel-foot">
+            <span>{mode === "preview" ? "کپی سریع؛ ممکن است Code block به متن ساده تبدیل شود" : mode === "markdown" ? "مناسب Legacy Editor و ابزارهای Import" : "فقط برای API؛ داخل Editor پیست نکنید"}</span>
+            <span className={mode === "preview" ? "caution" : "ready"}>{mode === "preview" ? "محدودیت Clipboard" : "خروجی تخصصی"}</span>
+          </div>
         </article>
       </section>
-      <footer><span>نکته</span> برای بهترین نتیجه، خروجی «پیش‌نمایش» را کپی و مستقیماً داخل ویرایشگر کانفلوئنس Paste کنید.</footer>
+      <section className="native-cta">
+        <div><span className="native-kicker">روش پیشنهادی</span><h2>بلوک واقعی می‌خواهید؟ مستقیم منتشر کنید.</h2><p>Code macro، جدول، تیتر و فهرست با Storage API خود کانفلوئنس ساخته می‌شوند؛ نه با حدس Clipboard.</p></div>
+        <button onClick={() => { setPublishOpen(true); setPublishResult(null); }}>اتصال و ساخت صفحه</button>
+      </section>
+      <footer><span>امنیت</span> توکن API ذخیره نمی‌شود و بعد از پاسخ موفق از فرم پاک می‌شود.</footer>
+
+      {publishOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPublishOpen(false); }}>
+          <section className="modal" role="dialog" aria-modal="true" aria-labelledby="publish-title">
+            <div className="modal-head"><div><span>CONFLUENCE API</span><h2 id="publish-title">ساخت صفحهٔ Native</h2></div><button aria-label="بستن" onClick={() => setPublishOpen(false)}>×</button></div>
+            <div className="privacy-note"><b>اطلاعات اتصال ذخیره نمی‌شوند.</b> درخواست فقط به دامنهٔ رسمی <code>*.atlassian.net</code> شما ارسال می‌شود.</div>
+            <form onSubmit={publishToConfluence}>
+              <label>آدرس سایت کانفلوئنس<input required type="url" dir="ltr" placeholder="https://company.atlassian.net" value={connection.siteUrl} onChange={(e) => setConnection({ ...connection, siteUrl: e.target.value })} /></label>
+              <div className="form-grid">
+                <label>ایمیل اکانت<input required type="email" dir="ltr" placeholder="you@company.com" value={connection.email} onChange={(e) => setConnection({ ...connection, email: e.target.value })} /></label>
+                <label>API Token<input required type="password" dir="ltr" autoComplete="off" placeholder="••••••••••••" value={connection.apiToken} onChange={(e) => setConnection({ ...connection, apiToken: e.target.value })} /></label>
+              </div>
+              <label>عنوان صفحه<input required placeholder="مثلاً راهنمای معماری LiteLLM" value={connection.title} onChange={(e) => setConnection({ ...connection, title: e.target.value })} /></label>
+              <div className="form-grid">
+                <label>Space ID<input required inputMode="numeric" dir="ltr" placeholder="123456" value={connection.spaceId} onChange={(e) => setConnection({ ...connection, spaceId: e.target.value })} /></label>
+                <label>Parent Page ID <small>اختیاری</small><input inputMode="numeric" dir="ltr" placeholder="987654" value={connection.parentId} onChange={(e) => setConnection({ ...connection, parentId: e.target.value })} /></label>
+              </div>
+              {publishResult && <div className={`result ${publishResult.ok ? "success" : "error"}`}>{publishResult.message}{publishResult.url && <> <a href={publishResult.url} target="_blank" rel="noreferrer">باز کردن صفحه ↗</a></>}</div>}
+              <div className="modal-actions"><button type="button" className="ghost-button" onClick={() => setPublishOpen(false)}>انصراف</button><button type="submit" className="submit-button" disabled={publishing || !text.trim()}>{publishing ? "در حال ساخت صفحه…" : "ساخت صفحه در کانفلوئنس"}</button></div>
+            </form>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
