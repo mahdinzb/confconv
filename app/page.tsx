@@ -210,34 +210,34 @@ export default function Home() {
   return (
     <main>
       <header className="topbar">
-        <div className="brand"><span className="mark">CF</span><div><strong>Conflux</strong><small>متن مرتب، آمادهٔ کانفلوئنس</small></div></div>
+        <div className="brand"><span className="mark">CC</span><div><strong>ConfConv</strong><small>Content formatted for Confluence</small></div></div>
       </header>
       <section className="toolbar">
         <div className="metrics">
-          <span><b>{blocks.length}</b> بلوک</span><span><b>{codeCount}</b> کد</span><span><b>{tableCount}</b> جدول</span>
+          <span><b>{blocks.length}</b> blocks</span><span><b>{codeCount}</b> code blocks</span><span><b>{tableCount}</b> tables</span>
         </div>
-        <div className="segmented" aria-label="نوع خروجی">
+        <div className="segmented" aria-label="Output format">
           <button className={mode === "wiki" ? "active recommended-tab" : ""} onClick={() => setMode("wiki")}>Confluence Wiki ✓</button>
           <button className={mode === "markdown" ? "active" : ""} onClick={() => setMode("markdown")}>Markdown</button>
         </div>
       </section>
       <section className="workspace">
         <article className="panel input-panel">
-          <div className="panel-head"><div><span>01</span><h2>متن ورودی</h2></div><button className="ghost" onClick={() => setText("")}>پاک کردن</button></div>
-          <textarea value={text} onChange={(e) => setText(e.target.value)} spellCheck dir="auto" aria-label="متن ورودی" placeholder="متن فارسی، انگلیسی یا ترکیبی را اینجا بچسبانید…" />
-          <div className="panel-foot"><span>Markdown و متن ساده</span><span>{text.length.toLocaleString("fa-IR")} کاراکتر</span></div>
+          <div className="panel-head"><div><span>01</span><h2>Source text</h2></div><button className="ghost" onClick={() => setText("")}>Clear</button></div>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} spellCheck dir="auto" aria-label="Source text" placeholder="Paste Persian, English, or mixed-language text here…" />
+          <div className="panel-foot"><span>Markdown or plain text</span><span>{text.length.toLocaleString("en-US")} characters</span></div>
         </article>
         <article className="panel output-panel">
           <div className="panel-head">
-            <div><span>02</span><h2>خروجی کانفلوئنس</h2></div>
+            <div><span>02</span><h2>Confluence output</h2></div>
             <button className={`copy ${copied ? "done" : ""}`} onClick={copyOutput}>
-              {copied ? "کپی شد ✓" : mode === "wiki" ? "کپی Confluence Wiki" : "کپی Markdown"}
+              {copied ? "Copied ✓" : mode === "wiki" ? "Copy Confluence Wiki" : "Copy Markdown"}
             </button>
           </div>
           {mode === "wiki" && <textarea className="storage wiki-output" readOnly value={wiki} dir="auto" aria-label="Confluence Wiki Markup output" />}
           {mode === "markdown" && <textarea className="storage" readOnly value={text} dir="auto" aria-label="Markdown output" />}
           <div className="panel-foot">
-            <span>{mode === "wiki" ? "مسیر استفاده: Insert → Markup → Confluence Wiki" : "مسیر استفاده: Insert → Markup → Markdown"}</span>
+            <span>{mode === "wiki" ? "Use in Confluence: Insert → Markup → Confluence Wiki" : "Use in Confluence: Insert → Markup → Markdown"}</span>
             <span className="ready">{mode === "wiki" ? "Confluence Wiki" : "Markdown"}</span>
           </div>
         </article>
