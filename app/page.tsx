@@ -194,17 +194,35 @@ function wikiMarkup(blocks: Block[]) {
 
 export default function Home() {
   const [text, setText] = useState(sample);
-  const [mode, setMode] = useState<"wiki" | "markdown">("wiki");
+  const [mode, setMode] = useState<"preview" | "wiki" | "markdown">("wiki");
   const [copied, setCopied] = useState(false);
   const blocks = useMemo(() => parse(text), [text]);
+  const html = useMemo(() => renderHtml(blocks), [blocks]);
   const wiki = useMemo(() => wikiMarkup(blocks), [blocks]);
   const codeCount = blocks.filter((x) => x.type === "code").length;
   const tableCount = blocks.filter((x) => x.type === "table").length;
 
   async function copyOutput() {
-    await navigator.clipboard.writeText(mode === "wiki" ? wiki : text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
+    try {
+      if (mode === "preview" && "ClipboardItem" in window) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([text], { type: "text/plain" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(mode === "wiki" ? wiki : text);
+      }
+    } catch {
+      try {
+        await navigator.clipboard.writeText(mode === "wiki" ? wiki : text);
+      } catch {
+        // Keep the visual confirmation responsive even when a browser limits Clipboard API access.
+      }
+    }
   }
 
   return (
@@ -217,6 +235,7 @@ export default function Home() {
           <span><b>{blocks.length}</b> blocks</span><span><b>{codeCount}</b> code blocks</span><span><b>{tableCount}</b> tables</span>
         </div>
         <div className="segmented" aria-label="Output format">
+          <button className={mode === "preview" ? "active" : ""} onClick={() => setMode("preview")}>Preview</button>
           <button className={mode === "wiki" ? "active recommended-tab" : ""} onClick={() => setMode("wiki")}>Confluence Wiki ✓</button>
           <button className={mode === "markdown" ? "active" : ""} onClick={() => setMode("markdown")}>Markdown</button>
         </div>
@@ -234,11 +253,12 @@ export default function Home() {
               {copied ? "Copied ✓" : "Copy"}
             </button>
           </div>
+          {mode === "preview" && <div className="preview confluence" dangerouslySetInnerHTML={{ __html: html }} />}
           {mode === "wiki" && <textarea className="storage wiki-output" readOnly value={wiki} dir="auto" aria-label="Confluence Wiki Markup output" />}
           {mode === "markdown" && <textarea className="storage" readOnly value={text} dir="auto" aria-label="Markdown output" />}
           <div className="panel-foot">
-            <span>{mode === "wiki" ? "Use in Confluence: Insert → Markup → Confluence Wiki" : "Use in Confluence: Insert → Markup → Markdown"}</span>
-            <span className="ready">{mode === "wiki" ? "Confluence Wiki" : "Markdown"}</span>
+            <span>{mode === "preview" ? "Rich preview — Copy preserves supported formatting" : mode === "wiki" ? "Use in Confluence: Insert → Markup → Confluence Wiki" : "Use in Confluence: Insert → Markup → Markdown"}</span>
+            <span className="ready">{mode === "preview" ? "Preview" : mode === "wiki" ? "Confluence Wiki" : "Markdown"}</span>
           </div>
         </article>
       </section>
