@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import "./workspace.css";
 
 type Block =
@@ -119,15 +119,17 @@ function detectLanguage(code: string) {
   return "text";
 }
 
-function renderHtml(blocks: Block[]) {
-  return blocks.map((b) => {
+function renderHtml(blocks: Block[], interactive = false) {
+  return blocks.map((b, index) => {
     if (b.type === "rule") return "<hr />";
     if (b.type === "heading") return `<h${b.level} dir="${direction(b.text)}">${inline(b.text)}</h${b.level}>`;
     if (b.type === "paragraph") return `<p dir="${direction(b.text)}">${inline(b.text)}</p>`;
     if (b.type === "quote") return `<blockquote dir="${direction(b.text)}">${inline(b.text).replace(/\n/g, "<br />")}</blockquote>`;
     if (b.type === "code") {
       const language = escapeHtml(b.language);
-      return `<pre class="code-block language-${language}" data-language="${language}" dir="ltr"><code class="language-${language}">${escapeHtml(b.text)}</code></pre>`;
+      const code = `<pre class="code-block language-${language}" data-language="${language}" dir="ltr"><code class="language-${language}">${escapeHtml(b.text)}</code></pre>`;
+      if (!interactive) return code;
+      return `<div class="code-block-shell">${code}<button type="button" class="code-copy-button" data-code-copy data-code-index="${index}" aria-label="Copy ${language} code" aria-live="polite">Copy</button></div>`;
     }
     if (b.type === "list") {
       const tag = b.ordered ? "ol" : "ul";
@@ -136,6 +138,24 @@ function renderHtml(blocks: Block[]) {
     const [head, ...rows] = b.rows;
     return `<table dir="${direction(b.rows.flat().join(" "))}"><thead><tr>${head.map((x) => `<th>${inline(x)}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((x) => `<td>${inline(x)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
   }).join("\n");
+}
+
+async function writePlainText(value: string) {
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand("copy");
+    textarea.remove();
+    return copied;
+  }
 }
 
 function storageMarkup(blocks: Block[]) {
@@ -197,7 +217,8 @@ export default function Home() {
   const [mode, setMode] = useState<"preview" | "wiki" | "markdown">("wiki");
   const [copied, setCopied] = useState(false);
   const blocks = useMemo(() => parse(text), [text]);
-  const html = useMemo(() => renderHtml(blocks), [blocks]);
+  const previewHtml = useMemo(() => renderHtml(blocks, true), [blocks]);
+  const clipboardHtml = useMemo(() => renderHtml(blocks), [blocks]);
   const wiki = useMemo(() => wikiMarkup(blocks), [blocks]);
   const codeCount = blocks.filter((x) => x.type === "code").length;
   const tableCount = blocks.filter((x) => x.type === "table").length;
@@ -209,20 +230,38 @@ export default function Home() {
       if (mode === "preview" && "ClipboardItem" in window) {
         await navigator.clipboard.write([
           new ClipboardItem({
-            "text/html": new Blob([html], { type: "text/html" }),
+            "text/html": new Blob([clipboardHtml], { type: "text/html" }),
             "text/plain": new Blob([text], { type: "text/plain" }),
           }),
         ]);
       } else {
-        await navigator.clipboard.writeText(mode === "wiki" ? wiki : text);
+        await writePlainText(mode === "wiki" ? wiki : text);
       }
     } catch {
-      try {
-        await navigator.clipboard.writeText(mode === "wiki" ? wiki : text);
-      } catch {
-        // Keep the visual confirmation responsive even when a browser limits Clipboard API access.
-      }
+      await writePlainText(mode === "wiki" ? wiki : text);
     }
+  }
+
+  async function copyCodeBlock(event: MouseEvent<HTMLDivElement>) {
+    if (!(event.target instanceof Element)) return;
+    const button = event.target.closest<HTMLButtonElement>("[data-code-copy]");
+    if (!button) return;
+
+    const block = blocks[Number(button.dataset.codeIndex)];
+    if (!block || block.type !== "code") return;
+
+    const copied = await writePlainText(block.text);
+    if (!copied) return;
+
+    button.textContent = "Copied ✓";
+    button.classList.add("done");
+    button.setAttribute("aria-label", "Code copied");
+    window.setTimeout(() => {
+      if (!button.isConnected) return;
+      button.textContent = "Copy";
+      button.classList.remove("done");
+      button.setAttribute("aria-label", `Copy ${block.language} code`);
+    }, 1600);
   }
 
   return (
@@ -258,7 +297,7 @@ export default function Home() {
               {copied ? "Copied ✓" : "Copy"}
             </button>
           </div>
-          {mode === "preview" && <div className="preview confluence" dangerouslySetInnerHTML={{ __html: html }} />}
+          {mode === "preview" && <div className="preview confluence" onClick={copyCodeBlock} dangerouslySetInnerHTML={{ __html: previewHtml }} />}
           {mode === "wiki" && <textarea className="storage wiki-output" readOnly value={wiki} dir="auto" aria-label="Confluence Wiki Markup output" />}
           {mode === "markdown" && <textarea className="storage" readOnly value={text} dir="auto" aria-label="Markdown output" />}
           <div className="panel-foot">

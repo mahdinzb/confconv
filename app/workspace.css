@@ -44,8 +44,16 @@ h1 { margin:0; font-size:clamp(36px,4.3vw,68px); line-height:1.15; letter-spacin
 .confluence p { margin:0 0 17px; }.confluence ul,.confluence ol { padding-inline-start:25px; margin:0 0 20px; }
 .confluence li { margin:5px 0; }.confluence a { color:#0875c1; }
 .confluence code:not(pre code) { direction:ltr; background:#eeeae1; color:#9d3545; padding:2px 5px; border-radius:4px; font:12px Consolas,monospace; }
+.confluence .code-block-shell { position:relative; margin:20px 0; }
 .confluence pre { position:relative; background:#17241e; color:#dfe9e3; padding:38px 20px 20px; border-radius:10px; overflow:auto; font:12px/1.8 Consolas,monospace; margin:20px 0; }
+.confluence .code-block-shell pre { margin:0; }
 .confluence pre:before { content:attr(data-language); position:absolute; top:10px; left:14px; color:#8ca598; text-transform:uppercase; font-size:9px; letter-spacing:1px; }
+.confluence pre code::selection { background:#f5d98e; color:#17241e; text-shadow:none; }
+.confluence pre code::-moz-selection { background:#f5d98e; color:#17241e; text-shadow:none; }
+.code-copy-button { position:absolute; z-index:1; top:8px; right:10px; border:1px solid #8ca59855; background:#263a31; color:#dfe9e3; min-width:58px; padding:5px 10px; border-radius:7px; font:600 10px/1.2 Calibri,Arial,sans-serif; transition:background .18s,border-color .18s,color .18s; }
+.code-copy-button:hover,.code-copy-button:focus-visible { background:#365247; border-color:#8ca598aa; color:white; outline:none; }
+.code-copy-button:focus-visible { box-shadow:0 0 0 2px #f5d98e; }
+.code-copy-button.done { background:#dbeadf; border-color:#dbeadf; color:#155b42; }
 .confluence blockquote { margin:18px 0; padding:12px 18px; border-inline-start:4px solid #d2ad54; background:#faf5e7; border-radius:6px; color:#4c554f; }
 .confluence table { width:100%; border-collapse:collapse; margin:20px 0; font-size:12px; }
 .confluence th { background:#e9eee9; font-weight:700; }.confluence th,.confluence td { border:1px solid #d5dcd6; padding:10px 12px; text-align:start; }
