@@ -15,4 +15,4 @@
 body { margin:0; background:var(--paper); color:var(--ink); font-family:"ConfConv Persian","ConfConv Latin",IRANSans,Calibri,Tahoma,Arial,sans-serif; }
 button, textarea { font:inherit; }
 button { cursor:pointer; }
-::selection { background:#f5d98e; }
+::selection { background:#f5d98e; color:#14231d; }
