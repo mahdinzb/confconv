@@ -53,8 +53,8 @@ test("adds accessible per-block copy controls with readable code selection", asy
   assert.match(staticApp, /preview\.addEventListener\("click"/);
   assert.match(staticApp, /html\(blocks,true\)/);
   assert.match(staticCss, /pre code::selection\{[^}]*color:#17241e/);
-  assert.match(staticHtml, /styles\.css\?v=20260822-1/);
-  assert.match(staticHtml, /app\.js\?v=20260822-1/);
+  assert.match(staticHtml, /styles\.css\?v=20260822-2/);
+  assert.match(staticHtml, /app\.js\?v=20260822-2/);
 });
 
 test("offers a print-ready PDF download only in Smart View", async () => {
@@ -70,8 +70,11 @@ test("offers a print-ready PDF download only in Smart View", async () => {
   assert.match(page, /window\.print\(\)/);
   assert.match(css, /@media print/);
   assert.match(css, /\.code-copy-button\{display:none!important\}/);
+  assert.match(css, /border-inline-start:5px solid #155b42!important/);
+  assert.match(css, /print-color-adjust:exact/);
   assert.match(staticHtml, /id="download-pdf"[^>]*hidden[^>]*>Download as PDF/);
   assert.match(staticApp, /download-pdf"\)\.hidden=mode!=="preview"/);
   assert.match(staticApp, /download-pdf"\)\.addEventListener\("click",\(\)=>window\.print\(\)\)/);
   assert.match(staticCss, /@media print/);
+  assert.match(staticCss, /border-inline-start:5px solid #155b42!important/);
 });
