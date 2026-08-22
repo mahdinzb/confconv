@@ -53,6 +53,25 @@ test("adds accessible per-block copy controls with readable code selection", asy
   assert.match(staticApp, /preview\.addEventListener\("click"/);
   assert.match(staticApp, /html\(blocks,true\)/);
   assert.match(staticCss, /pre code::selection\{[^}]*color:#17241e/);
-  assert.match(staticHtml, /styles\.css\?v=20260813-1/);
-  assert.match(staticHtml, /app\.js\?v=20260813-1/);
+  assert.match(staticHtml, /styles\.css\?v=20260822-1/);
+  assert.match(staticHtml, /app\.js\?v=20260822-1/);
+});
+
+test("offers a print-ready PDF download only in Smart View", async () => {
+  const [page, css, staticApp, staticCss, staticHtml] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/workspace.css", import.meta.url), "utf8"),
+    readFile(new URL("../docs/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../docs/styles.css", import.meta.url), "utf8"),
+    readFile(new URL("../docs/index.html", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(page, /mode === "preview".*Download as PDF/);
+  assert.match(page, /window\.print\(\)/);
+  assert.match(css, /@media print/);
+  assert.match(css, /\.code-copy-button\{display:none!important\}/);
+  assert.match(staticHtml, /id="download-pdf"[^>]*hidden[^>]*>Download as PDF/);
+  assert.match(staticApp, /download-pdf"\)\.hidden=mode!=="preview"/);
+  assert.match(staticApp, /download-pdf"\)\.addEventListener\("click",\(\)=>window\.print\(\)\)/);
+  assert.match(staticCss, /@media print/);
 });

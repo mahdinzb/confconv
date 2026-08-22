@@ -264,6 +264,10 @@ export default function Home() {
     }, 1600);
   }
 
+  function downloadPdf() {
+    window.print();
+  }
+
   return (
     <main>
       <header className="topbar">
@@ -293,9 +297,12 @@ export default function Home() {
         <article className="panel output-panel">
           <div className="panel-head">
             <div><span>02</span><h2>Confluence output</h2></div>
-            <button className={`copy ${copied ? "done" : ""}`} onClick={copyOutput}>
-              {copied ? "Copied ✓" : "Copy"}
-            </button>
+            <div className="panel-actions">
+              {mode === "preview" && <button className="pdf-button" onClick={downloadPdf}>Download as PDF</button>}
+              <button className={`copy ${copied ? "done" : ""}`} onClick={copyOutput}>
+                {copied ? "Copied ✓" : "Copy"}
+              </button>
+            </div>
           </div>
           {mode === "preview" && <div className="preview confluence" onClick={copyCodeBlock} dangerouslySetInnerHTML={{ __html: previewHtml }} />}
           {mode === "wiki" && <textarea className="storage wiki-output" readOnly value={wiki} dir="auto" aria-label="Confluence Wiki Markup output" />}
