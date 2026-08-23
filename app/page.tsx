@@ -1,6 +1,14 @@
 "use client";
 
-import { useMemo, useState, type MouseEvent } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type MouseEvent,
+  type PointerEvent,
+} from "react";
 import "./workspace.css";
 
 type Block =
@@ -216,12 +224,66 @@ export default function Home() {
   const [text, setText] = useState(sample);
   const [mode, setMode] = useState<"preview" | "wiki" | "markdown">("wiki");
   const [copied, setCopied] = useState(false);
+  const [pasteStatus, setPasteStatus] = useState<"idle" | "pasted" | "blocked">("idle");
+  const [inputPaneWidth, setInputPaneWidth] = useState(50);
+  const workspaceRef = useRef<HTMLElement>(null);
+  const sourceRef = useRef<HTMLTextAreaElement>(null);
   const blocks = useMemo(() => parse(text), [text]);
   const previewHtml = useMemo(() => renderHtml(blocks, true), [blocks]);
   const clipboardHtml = useMemo(() => renderHtml(blocks), [blocks]);
   const wiki = useMemo(() => wikiMarkup(blocks), [blocks]);
   const codeCount = blocks.filter((x) => x.type === "code").length;
   const tableCount = blocks.filter((x) => x.type === "table").length;
+
+  async function pasteSource() {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      setText(clipboardText);
+      setPasteStatus("pasted");
+      window.setTimeout(() => setPasteStatus("idle"), 1600);
+      window.requestAnimationFrame(() => sourceRef.current?.focus());
+    } catch {
+      setPasteStatus("blocked");
+      window.setTimeout(() => setPasteStatus("idle"), 2400);
+    }
+  }
+
+  function resizeFromClientX(clientX: number) {
+    const bounds = workspaceRef.current?.getBoundingClientRect();
+    if (!bounds || bounds.width === 0) return;
+    const percentage = ((clientX - bounds.left) / bounds.width) * 100;
+    setInputPaneWidth(Math.min(75, Math.max(25, percentage)));
+  }
+
+  function startResize(event: PointerEvent<HTMLDivElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    document.body.classList.add("workspace-resizing");
+    resizeFromClientX(event.clientX);
+  }
+
+  function moveResize(event: PointerEvent<HTMLDivElement>) {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    resizeFromClientX(event.clientX);
+  }
+
+  function stopResize(event: PointerEvent<HTMLDivElement>) {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    document.body.classList.remove("workspace-resizing");
+  }
+
+  function resizeWithKeyboard(event: KeyboardEvent<HTMLDivElement>) {
+    const updates: Record<string, number> = {
+      ArrowLeft: inputPaneWidth - 2,
+      ArrowRight: inputPaneWidth + 2,
+      Home: 25,
+      End: 75,
+    };
+    if (!(event.key in updates)) return;
+    event.preventDefault();
+    setInputPaneWidth(Math.min(75, Math.max(25, updates[event.key])));
+  }
 
   async function copyOutput() {
     setCopied(true);
@@ -288,12 +350,43 @@ export default function Home() {
           <button className={mode === "markdown" ? "active" : ""} onClick={() => setMode("markdown")}>Markdown</button>
         </div>
       </section>
-      <section className="workspace">
+      <section
+        className="workspace"
+        ref={workspaceRef}
+        style={{ "--input-pane-width": `${inputPaneWidth}%` } as CSSProperties}
+      >
         <article className="panel input-panel">
-          <div className="panel-head"><div><span>01</span><h2>Source text</h2></div><button className="ghost" onClick={() => setText("")}>Clear</button></div>
-          <textarea value={text} onChange={(e) => setText(e.target.value)} spellCheck dir="auto" aria-label="Source text" placeholder="Paste Persian, English, or mixed-language text here…" />
+          <div className="panel-head">
+            <div><span>01</span><h2>Source text</h2></div>
+            <div className="panel-actions">
+              <button
+                className={`paste-button ${pasteStatus}`}
+                onClick={pasteSource}
+                title={pasteStatus === "blocked" ? "Clipboard access was blocked. Allow clipboard permission and try again." : "Replace source text with clipboard contents"}
+              >
+                {pasteStatus === "pasted" ? "Pasted ✓" : pasteStatus === "blocked" ? "Paste blocked" : "Paste"}
+              </button>
+              <button className="ghost" onClick={() => setText("")}>Clear</button>
+            </div>
+          </div>
+          <textarea ref={sourceRef} value={text} onChange={(e) => setText(e.target.value)} spellCheck dir="auto" aria-label="Source text" placeholder="Paste Persian, English, or mixed-language text here…" />
           <div className="panel-foot"><span>Markdown or plain text</span><span>{text.length.toLocaleString("en-US")} characters</span></div>
         </article>
+        <div
+          className="workspace-divider"
+          role="separator"
+          aria-label="Resize source and output panels"
+          aria-orientation="vertical"
+          aria-valuemin={25}
+          aria-valuemax={75}
+          aria-valuenow={Math.round(inputPaneWidth)}
+          tabIndex={0}
+          onPointerDown={startResize}
+          onPointerMove={moveResize}
+          onPointerUp={stopResize}
+          onPointerCancel={stopResize}
+          onKeyDown={resizeWithKeyboard}
+        ><span aria-hidden="true" /></div>
         <article className="panel output-panel">
           <div className="panel-head">
             <div><span>02</span><h2>Confluence output</h2></div>

@@ -53,8 +53,8 @@ test("adds accessible per-block copy controls with readable code selection", asy
   assert.match(staticApp, /preview\.addEventListener\("click"/);
   assert.match(staticApp, /html\(blocks,true\)/);
   assert.match(staticCss, /pre code::selection\{[^}]*color:#17241e/);
-  assert.match(staticHtml, /styles\.css\?v=20260822-2/);
-  assert.match(staticHtml, /app\.js\?v=20260822-2/);
+  assert.match(staticHtml, /styles\.css\?v=20260823-1/);
+  assert.match(staticHtml, /app\.js\?v=20260823-1/);
 });
 
 test("offers a print-ready PDF download only in Smart View", async () => {
@@ -77,4 +77,30 @@ test("offers a print-ready PDF download only in Smart View", async () => {
   assert.match(staticApp, /download-pdf"\)\.addEventListener\("click",\(\)=>window\.print\(\)\)/);
   assert.match(staticCss, /@media print/);
   assert.match(staticCss, /border-inline-start:5px solid #155b42!important/);
+});
+
+test("adds clipboard replacement and an accessible resizable workspace", async () => {
+  const [page, css, staticApp, staticCss, staticHtml] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/workspace.css", import.meta.url), "utf8"),
+    readFile(new URL("../docs/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../docs/styles.css", import.meta.url), "utf8"),
+    readFile(new URL("../docs/index.html", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(page, /navigator\.clipboard\.readText\(\)/);
+  assert.match(page, /role="separator"/);
+  assert.match(page, /aria-valuemin=\{25\}/);
+  assert.match(page, /onPointerDown=\{startResize\}/);
+  assert.match(page, /onKeyDown=\{resizeWithKeyboard\}/);
+  assert.match(css, /--input-pane-width:50%/);
+  assert.match(css, /workspace-divider/);
+  assert.match(staticApp, /navigator\.clipboard\.readText\(\)/);
+  assert.match(staticApp, /setPointerCapture/);
+  assert.match(staticApp, /ArrowLeft:current-2/);
+  assert.match(staticCss, /--input-pane-width:50%/);
+  assert.match(staticHtml, /id="paste"/);
+  assert.match(staticHtml, /role="separator"/);
+  assert.match(staticHtml, /styles\.css\?v=20260823-1/);
+  assert.match(staticHtml, /app\.js\?v=20260823-1/);
 });
