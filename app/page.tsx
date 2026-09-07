@@ -54,9 +54,9 @@ function inline(value: string) {
 }
 
 function direction(text: string) {
-  const rtl = (text.match(/[\u0600-\u06ff]/g) || []).length;
-  const latin = (text.match(/[A-Za-z]/g) || []).length;
-  return rtl > latin * 0.45 ? "rtl" : "ltr";
+  // Technical Persian text often contains many Latin identifiers. Counting
+  // characters can therefore flip an otherwise Persian block to LTR.
+  return /[\u0600-\u06ff]/.test(text) ? "rtl" : "ltr";
 }
 
 function splitRow(line: string) {

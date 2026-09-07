@@ -53,8 +53,8 @@ test("adds accessible per-block copy controls with readable code selection", asy
   assert.match(staticApp, /preview\.addEventListener\("click"/);
   assert.match(staticApp, /html\(blocks,true\)/);
   assert.match(staticCss, /pre code::selection\{[^}]*color:#17241e/);
-  assert.match(staticHtml, /styles\.css\?v=20260823-1/);
-  assert.match(staticHtml, /app\.js\?v=20260823-1/);
+  assert.match(staticHtml, /styles\.css\?v=20260907-1/);
+  assert.match(staticHtml, /app\.js\?v=20260907-1/);
 });
 
 test("offers a print-ready PDF download only in Smart View", async () => {
@@ -101,6 +101,18 @@ test("adds clipboard replacement and an accessible resizable workspace", async (
   assert.match(staticCss, /--input-pane-width:50%/);
   assert.match(staticHtml, /id="paste"/);
   assert.match(staticHtml, /role="separator"/);
-  assert.match(staticHtml, /styles\.css\?v=20260823-1/);
-  assert.match(staticHtml, /app\.js\?v=20260823-1/);
+  assert.match(staticHtml, /styles\.css\?v=20260907-1/);
+  assert.match(staticHtml, /app\.js\?v=20260907-1/);
+});
+
+test("keeps technical mixed-language blocks RTL when they contain Persian", async () => {
+  const [page, staticApp] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../docs/app.js", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(page, /return \/\[\\u0600-\\u06ff\]\/+\.test\(text\) \? "rtl" : "ltr"/);
+  assert.match(staticApp, /return\/\[\\u0600-\\u06ff\]\/+\.test\(s\)\?"rtl":"ltr"/);
+  assert.doesNotMatch(page, /rtl > latin/);
+  assert.doesNotMatch(staticApp, /length>.*length\*\.45/);
 });
